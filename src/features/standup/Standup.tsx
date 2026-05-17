@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useVibration } from "@baditaflorin/mesh-common";
 import * as Y from "yjs";
 import { createRoomSync } from "../sync/yjsRoom";
 import { createClockSync } from "../sync/clockSync";
@@ -50,6 +51,7 @@ export function Standup({ roomId, myName, myTagId, duration, mode, onOpenSetting
   const scannerRef = useRef<ScannerHandle | null>(null);
   const prevSpeakerRef = useRef<number | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const haptic = useVibration();
 
   const meshHandle = useMemo(() => {
     if (!armed) return null;
@@ -156,7 +158,7 @@ export function Standup({ roomId, myName, myTagId, duration, mode, onOpenSetting
     // Vibrate on speaker change.
     if (prevSpeakerRef.current !== session.currentSpeaker) {
       prevSpeakerRef.current = session.currentSpeaker;
-      maybeVibrate([60, 40, 60]);
+      haptic.vibrate([60, 40, 60]);
       chirp(audioCtxRef.current);
     }
     // The "host" (whoever has the smallest awareness id alive — approximated by
@@ -409,14 +411,6 @@ function advanceSpeaker(doc: Y.Doc, fromIdx: number) {
     ySession.set("currentSpeaker", nextIdx);
     ySession.set("startedAt", Date.now());
   });
-}
-
-function maybeVibrate(pattern: number[]) {
-  try {
-    if (typeof navigator.vibrate === "function") navigator.vibrate(pattern);
-  } catch {
-    /* noop */
-  }
 }
 
 function chirp(ctx: AudioContext | null) {
