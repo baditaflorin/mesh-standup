@@ -1,6 +1,9 @@
 export const appConfig = {
   appName: "mesh-standup",
   storagePrefix: "mesh-standup",
+  description:
+    "Peer-to-peer mesh standup timer. Each phone is a slot; tap or scan ArUco markers to advance speakers in lockstep.",
+  accentHex: "#f9b956",
   version: __APP_VERSION__,
   commit: __GIT_COMMIT__,
   repositoryUrl: "https://github.com/baditaflorin/mesh-standup",
