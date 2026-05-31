@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useVibration } from "@baditaflorin/mesh-common";
+import { useTone, useVibration } from "@baditaflorin/mesh-common";
 import * as Y from "yjs";
 import { createRoomSync } from "../sync/yjsRoom";
 import { createClockSync } from "../sync/clockSync";
@@ -50,7 +50,7 @@ export function Standup({ roomId, myName, myTagId, duration, mode, onOpenSetting
   const previewRef = useRef<HTMLCanvasElement | null>(null);
   const scannerRef = useRef<ScannerHandle | null>(null);
   const prevSpeakerRef = useRef<number | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
+  const tone = useTone();
   const haptic = useVibration();
 
   const meshHandle = useMemo(() => {
@@ -159,7 +159,14 @@ export function Standup({ roomId, myName, myTagId, duration, mode, onOpenSetting
     if (prevSpeakerRef.current !== session.currentSpeaker) {
       prevSpeakerRef.current = session.currentSpeaker;
       haptic.vibrate([60, 40, 60]);
-      chirp(audioCtxRef.current);
+      tone.play({
+        freq: 660,
+        glideTo: 330,
+        type: "sine",
+        duration: 0.18,
+        gain: 0.07,
+        attack: 0.02,
+      });
     }
     // The "host" (whoever has the smallest awareness id alive — approximated by
     // the first peer in the roster, or just any peer racing fine because the
@@ -237,8 +244,7 @@ export function Standup({ roomId, myName, myTagId, duration, mode, onOpenSetting
   const remainingS = Math.max(0, Math.ceil(remainingMs / 1000));
 
   const arm = () => {
-    audioCtxRef.current ??= new AudioContext();
-    void audioCtxRef.current.resume();
+    void tone.resume();
     setArmed(true);
   };
 
@@ -411,21 +417,6 @@ function advanceSpeaker(doc: Y.Doc, fromIdx: number) {
     ySession.set("currentSpeaker", nextIdx);
     ySession.set("startedAt", Date.now());
   });
-}
-
-function chirp(ctx: AudioContext | null) {
-  if (!ctx) return;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(660, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(330, ctx.currentTime + 0.18);
-  gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.07, ctx.currentTime + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.22);
-  osc.connect(gain).connect(ctx.destination);
-  osc.start();
-  osc.stop(ctx.currentTime + 0.24);
 }
 
 function formatClock(totalSeconds: number): string {
