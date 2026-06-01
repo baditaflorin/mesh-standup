@@ -12,9 +12,10 @@ const storagePrefix = pkg.name;
  * "round-robin standup timer" — one speaker at a time has the floor, and
  * when peer A advances the baton (the non-ArUco "Skip / next" control) the
  * OPPOSITE peer (B) must see the active speaker change AND the synced
- * countdown timer running. This is mesh state, fully testable WITHOUT a
- * camera; the ArUco baton-pass is an optional alternate trigger over the
- * same Yjs `session` map.
+ * countdown timer running. We also drive the "+30s" extend control on peer A
+ * and assert peer B's shared countdown climbs past a full minute. This is all
+ * mesh state, fully testable WITHOUT a camera; the ArUco baton-pass is an
+ * optional alternate trigger over the same Yjs `session` map.
  */
 
 /** Set the peer's name via the Settings drawer, then arm the standup. */
@@ -80,7 +81,27 @@ test("round-robin baton advance on peer A is seen by peer B with a synced timer"
     );
     // And peer A agrees (the write originated there).
     await expect(a.locator(".standup-speaker strong")).toHaveText(secondSpeaker);
+
+    // CROSS-PEER ASSERTION #4: the "+30s" extend control on peer A lengthens
+    // the running slot for peer B too. The default slot is 60s, so a slot that
+    // just started can never show more than 0:59 remaining; after +30s, peer B
+    // must see the countdown climb above a full minute (≥ 1:01). We poll the
+    // mm:ss text on peer B and require it to cross 61s — only the shared
+    // `startedAt` bump (not local state) can produce that.
+    await a.getByRole("button", { name: /\+30s/i }).click();
+    await expect
+      .poll(async () => parseClock(await b.locator(".standup-time").innerText()), {
+        message: "peer B's countdown should climb past 60s after peer A taps +30s",
+      })
+      .toBeGreaterThan(61);
   } finally {
     await cleanup();
   }
 });
+
+/** Parse an "m:ss" countdown string into total seconds. */
+function parseClock(text: string): number {
+  const m = /(\d+):(\d{2})/.exec(text.trim());
+  if (!m) return 0;
+  return Number(m[1]) * 60 + Number(m[2]);
+}

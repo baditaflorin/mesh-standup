@@ -19,6 +19,15 @@ For hands-free standups, switch to **ArUco mode**: one phone becomes the
 room display + camera scanner. Each person carries a printed tag card; hold
 it up to the camera to claim the floor.
 
+## Try it in 2 tabs
+
+Open the [live app](https://baditaflorin.github.io/mesh-standup/) in two
+browser tabs (same link = same room). Set a name in each via the ⚙ settings
+drawer, tap **Connect to standup** in both, then **Start round** in one — both
+tabs show the same speaker and the same countdown. Tap **Skip / next** or
+**+30s** in one tab and watch the other update instantly. No server, no login,
+no install.
+
 ## How it works
 
 1. Each phone joins a shared **Yjs document** over **y-webrtc** via my
